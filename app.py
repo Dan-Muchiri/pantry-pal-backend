@@ -14,7 +14,7 @@ load_dotenv()
 
 
 # Local imports
-from models import db, User, Product
+from models import db, User, Product, ProductItem
 
 # Instantiate app, set attributes
 app = Flask(
@@ -103,6 +103,11 @@ def home():
                 <li><strong>/products/int:id</strong>:GET - Get a specific product</li>
                 <li><strong>/products/int:id</strong>:PATCH - Update a specific product</li>
                 <li><strong>/products/int:id</strong>:DELETE - Delete a specific product</li>
+                <li><strong>/product_items</strong>:GET - List of all product items</li>
+                <li><strong>/product_items</strong>:POST - Create a new product item</li>
+                <li><strong>/product_items/int:id</strong>:GET - Get a specific product item</li>
+                <li><strong>/product_items/int:id</strong>:PATCH - Update a specific product item</li>
+                <li><strong>/product_items/int:id</strong>:DELETE - Delete a specific product item</li>
             </ul>
         </div>
     </body>
@@ -248,6 +253,7 @@ class Products(Resource):
 
 api.add_resource(Products, '/products')
 
+
 class ProductByID(Resource):
     def get(self, id):
         product = Product.query.filter_by(id=id).first().to_dict()
@@ -275,6 +281,56 @@ class ProductByID(Resource):
 api.add_resource(ProductByID, '/products/<int:id>')
 
 
+# ProductItem Resources
+class ProductItems(Resource):
+    def get(self):
+        product_items = [item.to_dict() for item in ProductItem.query.all()]
+        return make_response(jsonify(product_items), 200)
+
+    def post(self):
+        data = request.get_json()
+
+        # Create a new product item
+        new_product_item = ProductItem(
+            product_id=data['product_id'],
+            brand_name=data['brand_name'],
+            quantity=data['quantity'],
+            expiry_date=data.get('expiry_date')
+        )
+
+        # Add the new product item to the database
+        db.session.add(new_product_item)
+        db.session.commit()
+
+        return make_response(jsonify(new_product_item.to_dict()), 201)
+
+api.add_resource(ProductItems, '/product_items')
+
+class ProductItemByID(Resource):
+    def get(self, id):
+        product_item = ProductItem.query.filter_by(id=id).first().to_dict()
+        return make_response(jsonify(product_item), 200)
+
+    def patch(self, id):
+        product_item = ProductItem.query.filter_by(id=id).first()
+        data = request.get_json()
+
+        for key, value in data.items():
+            setattr(product_item, key, value)
+
+        db.session.commit()
+
+        return make_response(jsonify(product_item.to_dict()), 200)
+
+    def delete(self, id):
+        product_item = ProductItem.query.filter_by(id=id).first()
+
+        db.session.delete(product_item)
+        db.session.commit()
+
+        return '', 204
+
+api.add_resource(ProductItemByID, '/product_items/<int:id>')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)

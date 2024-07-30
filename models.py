@@ -67,7 +67,7 @@ class User(db.Model, SerializerMixin):
 class Product(db.Model, SerializerMixin):
     __tablename__ = 'products'
 
-    serialize_rules = ('-user.products',)
+    serialize_rules = ('-user.products','-product_items.product')
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
@@ -80,11 +80,28 @@ class Product(db.Model, SerializerMixin):
 
     # relationships
     user = db.relationship('User', back_populates='products')
+    product_items = db.relationship('ProductItem', back_populates='product', cascade='all, delete, delete-orphan')
 
      # Composite unique constraint
     __table_args__ = (UniqueConstraint('name', 'user_id', name='unique_product_per_user'),)
 
     def __repr__(self):
-        return f'<Product {self.name}>'
-    
+        return f'<Product {self.name}| Category: {self.category} | Storage Place: {self.storage_place} | Quantity: {self.quantity}>'
+
+class ProductItem(db.Model, SerializerMixin):
+    __tablename__ = 'product_items'
+
+    serialize_rules = ('-product.product_items',)
+
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    brand_name = db.Column(db.String(50), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    expiry_date = db.Column(db.Date, nullable=True)
+
+    # relationships
+    product = db.relationship('Product', back_populates='product_items')
+
+    def __repr__(self):
+        return f'<ProductItem {self.brand_name} | Quantity: {self.quantity} | Expiry Date: {self.expiry_date}>'
     

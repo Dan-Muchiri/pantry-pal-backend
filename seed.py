@@ -3,10 +3,11 @@
 # Standard library imports
 from random import randint, choice
 from faker import Faker
+from datetime import date, timedelta
 
 # Local imports
 from app import app, db  # Import Flask app and db instance
-from models import User, Product  # Import User and Product models
+from models import User, Product, ProductItem  # Import User, Product, and ProductItem models
 
 if __name__ == '__main__':
     fake = Faker()
@@ -21,7 +22,7 @@ if __name__ == '__main__':
         
         # Seed users
         users = []
-        for _ in range(4):
+        for _ in range(2):
             user = User(
                 username=fake.user_name(),
                 email=fake.email(),
@@ -71,10 +72,11 @@ if __name__ == '__main__':
         }
         
         # Seed products
+        products = []
         for user in users:
-            for category, products in category_product_map.items():
+            for category, products_list in category_product_map.items():
                 # Choose a product from the category
-                product_name = choice(products)
+                product_name = choice(products_list)
                 
                 # Choose a suitable storage place for the category
                 storage_place = choice(category_storage_map[category])
@@ -90,10 +92,31 @@ if __name__ == '__main__':
                     storage_place=storage_place,
                     quantity=quantity,
                     unit=unit,
-                    low_limit = low_limit,
+                    low_limit=low_limit,
                     user_id=user.id
                 )
                 db.session.add(product)
+                products.append(product)
+
+        db.session.commit()
+
+        # Seed product items for Dan
+        dan = User.query.filter_by(username='dan').first()
+        dan_products = Product.query.filter_by(user_id=dan.id).all()
+
+        for product in dan_products:
+            for _ in range(3):  # Add 3 product items per product
+                brand_name = fake.company()
+                quantity = randint(1, 5)
+                expiry_date = fake.date_between(start_date="today", end_date="+1y")
+                
+                product_item = ProductItem(
+                    product_id=product.id,
+                    brand_name=brand_name,
+                    quantity=quantity,
+                    expiry_date=expiry_date
+                )
+                db.session.add(product_item)
 
         db.session.commit()
 
