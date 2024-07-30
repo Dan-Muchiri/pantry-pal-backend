@@ -14,7 +14,7 @@ load_dotenv()
 
 
 # Local imports
-from models import db, User
+from models import db, User, Product
 
 # Instantiate app, set attributes
 app = Flask(
@@ -36,6 +36,78 @@ api = Api(app)
 
 # Instantiate CORS
 CORS(app)
+
+# Define home route
+@app.route('/')
+def home():
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pantry Pal API</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f5f5f5;
+            }
+            .container {
+                max-width: 800px;
+                margin: 50px auto;
+                background-color: #fff;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+                text-align: center;
+            }
+            p {
+                margin-bottom: 15px;
+            }
+            ul {
+                list-style-type: none;
+                padding-left: 20px;
+            }
+            li {
+                margin-bottom: 5px;
+            }
+            a {
+                color: #007bff;
+                text-decoration: none;
+            }
+            a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Welcome to Pantry Pal API</h1>
+            <p>This is the API for Pantry Pal application.</p>
+            <p>Endpoints:</p>
+            <ul>
+                <li><strong>/users</strong> -:GET - List of all users details</li>
+                <li><strong>/users</strong> -:POST - Sign up a new user</li>
+                <li><strong>/users/int:id</strong> -:GET - Get a user details</li>
+                <li><strong>/users/int:id</strong> -:PATCH - Update a user details</li>
+                <li><strong>/users/int:id</strong> -:DELETE - Delete a user</li>
+                <li><strong>/login</strong> -:POST - User login</li>
+                <li><strong>/logout</strong> -:DELETE - User logout</li>
+                <li><strong>/check_session</strong>:GET - Check user session</li>
+                <li><strong>/products</strong>:GET - List of all products</li>
+                <li><strong>/products</strong>:POST - Create a new product</li>
+                <li><strong>/products/int:id</strong>:GET - Get a specific product</li>
+                <li><strong>/products/int:id</strong>:PATCH - Update a specific product</li>
+                <li><strong>/products/int:id</strong>:DELETE - Delete a specific product</li>
+            </ul>
+        </div>
+    </body>
+    </html>
+    """
 
 class Users(Resource):
     def get(self):
@@ -146,6 +218,61 @@ class CheckSession(Resource):
 api.add_resource(Login, '/login')
 api.add_resource(Logout, '/logout')
 api.add_resource(CheckSession, '/check_session')
+
+
+# Product Resources
+class Products(Resource):
+    def get(self):
+        products = [product.to_dict() for product in Product.query.all()]
+        return make_response(jsonify(products), 200)
+
+    def post(self):
+        data = request.get_json()
+
+        # Create a new product
+        new_product = Product(
+            name=data['name'],
+            user_id=data['user_id'],
+            category=data['category'],
+            storage_place=data['storage_place'],
+            quantity=data.get('quantity', 0),
+            unit=data['unit'],
+            low_limit=data.get('low_limit', 0)  # Set default value if not provided
+        )
+
+        # Add the new product to the database
+        db.session.add(new_product)
+        db.session.commit()
+
+        return make_response(jsonify(new_product.to_dict()), 201)
+
+api.add_resource(Products, '/products')
+
+class ProductByID(Resource):
+    def get(self, id):
+        product = Product.query.filter_by(id=id).first().to_dict()
+        return make_response(jsonify(product), 200)
+
+    def patch(self, id):
+        product = Product.query.filter_by(id=id).first()
+        data = request.get_json()
+
+        for key, value in data.items():
+            setattr(product, key, value)
+
+        db.session.commit()
+
+        return make_response(jsonify(product.to_dict()), 200)
+
+    def delete(self, id):
+        product = Product.query.filter_by(id=id).first()
+
+        db.session.delete(product)
+        db.session.commit()
+
+        return '', 204
+
+api.add_resource(ProductByID, '/products/<int:id>')
 
 
 
