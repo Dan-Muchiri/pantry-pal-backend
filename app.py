@@ -23,9 +23,9 @@ app = Flask(
     static_folder='../client/build',
     template_folder='../client/build'
 )
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = "Key"
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.json.compact = False
 
 migrate = Migrate(app, db)
