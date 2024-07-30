@@ -2,8 +2,7 @@ from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import validates
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import MetaData
-from sqlalchemy_serializer import SerializerMixin
+from sqlalchemy import MetaData, UniqueConstraint
 import re
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_bcrypt import Bcrypt
@@ -28,9 +27,9 @@ class User(db.Model, SerializerMixin):
     email = db.Column(db.String(255), nullable=False, unique=True)
     _password_hash = db.Column(db.String, nullable=False)
     picture = db.Column(db.String, nullable=True)
-    # Define relationship with UserFitnessActivity
+    # Define relationship
+    products = db.relationship('Product', back_populates='user', cascade='all, delete, delete-orphan') 
     
-
     def __repr__(self):
         return f'<User {self.username} | Email: {self.email}>'
     
@@ -64,3 +63,28 @@ class User(db.Model, SerializerMixin):
 
     def check_password(self, plaintext_password):
         return bcrypt.check_password_hash(self._password_hash, plaintext_password)
+    
+class Product(db.Model, SerializerMixin):
+    __tablename__ = 'products'
+
+    serialize_rules = ()
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    storage_place = db.Column(db.String(50), nullable=False)
+    quantity = db.Column(db.Integer, nullable=True) 
+    unit = db.Column(db.String(20), nullable=False)
+    low_limit = db.Column(db.Integer, nullable=True)
+
+    # relationships
+    user = db.relationship('User', back_populates='products')
+
+     # Composite unique constraint
+    __table_args__ = (UniqueConstraint('name', 'user_id', name='unique_product_per_user'),)
+
+    def __repr__(self):
+        return f'<Product {self.name}>'
+    
+    
