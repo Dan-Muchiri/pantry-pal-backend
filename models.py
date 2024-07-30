@@ -21,7 +21,7 @@ bcrypt = Bcrypt()
 class User(db.Model, SerializerMixin):
     __tablename__ = 'users'
 
-    serialize_rules = ('',)
+    serialize_rules = ()
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False, unique=True)

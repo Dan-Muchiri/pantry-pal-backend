@@ -45,10 +45,14 @@ class Users(Resource):
     def post(self):
         data = request.get_json()
 
-        # Check if the email already exists
-        existing_user = User.query.filter_by(email=data['email']).first()
+        # Check if the email or username already exists
+        existing_user = User.query.filter(
+            (User.email == data['email']) | (User.username == data['username'])
+        ).first()
+
         if existing_user:
-            return make_response(jsonify({'error': 'Email already exists'}), 400)
+            error_message = 'Email already exists' if existing_user.email == data['email'] else 'Username already exists'
+            return make_response(jsonify({'error': error_message}), 400)
 
         # Create a new user
         new_user = User(
@@ -101,8 +105,11 @@ class Login(Resource):
         email = data.get('email')
         password = data.get('password')
         
-        if not email or not password:
-            return {'message': 'Email and password are required'}, 400
+        if not email: 
+            return {'message': 'Email is required'}, 400
+        
+        if not password:
+            return {'message': 'Password is required'}, 400
         
         user = User.query.filter_by(email=email).first()
         
