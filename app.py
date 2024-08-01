@@ -34,8 +34,8 @@ db.init_app(app)
 # Instantiate REST API
 api = Api(app)
 
-# Instantiate CORS
-CORS(app)
+# Initialize CORS with options
+CORS(app, supports_credentials=True)
 
 # Define home route
 @app.route('/')
