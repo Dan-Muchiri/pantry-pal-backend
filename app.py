@@ -9,6 +9,7 @@ from flask import Flask, jsonify, request, make_response, session,render_templat
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
+import openai
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -26,6 +27,7 @@ app = Flask(
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+openai.api_key = os.getenv('OPENAI_API_KEY')
 app.json.compact = False
 
 migrate = Migrate(app, db)
@@ -331,6 +333,29 @@ class ProductItemByID(Resource):
         return '', 204
 
 api.add_resource(ProductItemByID, '/product_items/<int:id>')
+
+class Recipes(Resource):
+    def post(self):
+        data = request.get_json()
+        ingredients = data.get('ingredients', '')
+        
+        if not ingredients:
+            return {'error': 'Ingredients are required'}, 400
+        
+        try:
+            response = openai.Completion.create(
+                model="gpt-4o-mini",
+                prompt=f"Based on the following ingredients: {ingredients}, provide two recipe ideas with a brief description.",
+                max_tokens=150
+            )
+            recipes_text = response.choices[0].text.strip()
+            recipes_array = recipes_text.split('\n')
+            return make_response(jsonify(recipes_array), 200)
+        except Exception as e:
+            return make_response(jsonify({'error': str(e)}), 500)
+
+# Add the Recipes resource to the API
+api.add_resource(Recipes, '/recipes')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
