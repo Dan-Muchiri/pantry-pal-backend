@@ -233,23 +233,23 @@ class Products(Resource):
 
     def post(self):
         data = request.get_json()
+        try:
+            new_product = Product(
+                name=data['name'],
+                user_id=data['user_id'],
+                category=data['category'],
+                storage_place=data['storage_place'],
+                quantity=data.get('quantity', 0),
+                unit=data['unit'],
+                low_limit=data.get('low_limit', 0)
+            )
+            db.session.add(new_product)
+            db.session.commit()
+            return make_response(jsonify(new_product.to_dict()), 201)
+        except Exception as e:
+            db.session.rollback()
+            return make_response(jsonify({'error': str(e)}), 500)
 
-        # Create a new product
-        new_product = Product(
-            name=data['name'],
-            user_id=data['user_id'],
-            category=data['category'],
-            storage_place=data['storage_place'],
-            quantity=data.get('quantity', 0),
-            unit=data['unit'],
-            low_limit=data.get('low_limit', 0)  # Set default value if not provided
-        )
-
-        # Add the new product to the database
-        db.session.add(new_product)
-        db.session.commit()
-
-        return make_response(jsonify(new_product.to_dict()), 201)
 
 api.add_resource(Products, '/products')
 
