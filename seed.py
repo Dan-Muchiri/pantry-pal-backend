@@ -100,16 +100,21 @@ if __name__ == '__main__':
 
         db.session.commit()
 
-        # Seed product items for Dan
-        dan = User.query.filter_by(username='dan').first()
-        dan_products = Product.query.filter_by(user_id=dan.id).all()
+        # Seed product items and ensure quantity matches
+        for product in products:
+            # Calculate the total quantity needed
+            total_quantity = product.quantity
+            product_items_count = randint(1, 5)  # Ensure at least one product item
 
-        for product in dan_products:
-            for _ in range(3):  # Add 3 product items per product
+            total_product_items_quantity = 0
+            for _ in range(product_items_count):
                 brand_name = fake.company()
                 quantity = randint(1, 5)
                 expiry_date = fake.date_between(start_date="today", end_date="+1y")
                 
+                # Accumulate the quantity of product items
+                total_product_items_quantity += quantity
+
                 product_item = ProductItem(
                     product_id=product.id,
                     brand_name=brand_name,
@@ -117,6 +122,9 @@ if __name__ == '__main__':
                     expiry_date=expiry_date
                 )
                 db.session.add(product_item)
+
+            # Update the product quantity to match the total quantity of product items
+            product.quantity = total_product_items_quantity
 
         db.session.commit()
 
